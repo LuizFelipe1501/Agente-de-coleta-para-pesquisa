@@ -1,0 +1,20 @@
+# Chama o disparo e a leitura de e-mails a cada 10 minutos.
+# Configure em Settings > Secrets and variables > Actions:
+#   BOT_URL     = https://seu-bot.vercel.app
+#   CRON_SECRET = o mesmo valor da variável na Vercel
+name: agendador
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  rodar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparo
+        run: curl -sS --max-time 90 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.BOT_URL }}/api/cron/disparo"
+      - name: Caixa de e-mail
+        if: always()
+        run: curl -sS --max-time 90 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.BOT_URL }}/api/cron/caixa"
