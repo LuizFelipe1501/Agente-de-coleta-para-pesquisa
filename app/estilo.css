@@ -1,33 +1,81 @@
+/* Paleta da Capital Consultoria Júnior (capitalconsultoriafgv.com.br) */
+:root {
+  --bg: #F7F3FC;
+  --card: #FFFFFF;
+  --roxo: #7C3AED;          /* botões e destaques */
+  --roxo-marca: #45108A;    /* cor da marca */
+  --roxo-escuro: #30086B;
+  --lilas: #B78CE8;
+  --lilas-claro: #E9DDF8;
+  --texto: #2A1155;
+  --cinza: #6E5C93;
+  --linha: rgba(69, 16, 138, .14);
+  --ok-fundo: #E6F4EA; --ok-texto: #1E5B28;
+  --aviso-fundo: #FFF4D6; --aviso-borda: #F0D58C; --aviso-texto: #6B4C00;
+  --perigo: #B42318;
+}
+
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #1d1d1f; background: #f6f6f4; font-size: 15px; line-height: 1.45; }
+body {
+  margin: 0; background: var(--bg); color: var(--texto);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 15px; line-height: 1.5;
+}
+.topo {
+  background: var(--roxo-escuro); color: #fff;
+  padding: 12px 0;
+}
+.topo .dentro { max-width: 1040px; margin: 0 auto; padding: 0 16px; display: flex; align-items: baseline; gap: 10px; }
+.topo .marca { font-family: Archivo, Inter, sans-serif; font-weight: 800; letter-spacing: .04em; font-size: 18px; }
+.topo .marca span { color: var(--lilas); }
+.topo .sub { color: var(--lilas-claro); font-size: 13px; }
 main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 64px; }
-h1 { font-size: 22px; margin: 0 0 4px; }
-h2 { font-size: 17px; margin: 32px 0 10px; }
-h3 { font-size: 15px; margin: 18px 0 8px; }
-p.sub { color: #666; margin: 0 0 20px; }
-section, .caixa { background: #fff; border: 1px solid #e3e3df; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+
+h1, h2, h3 { font-family: Archivo, Inter, sans-serif; color: var(--texto); }
+h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
+h2 { font-size: 18px; font-weight: 700; margin: 32px 0 10px; color: var(--roxo-marca); }
+h3 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; }
+p.sub { color: var(--cinza); margin: 0 0 20px; }
+a { color: var(--roxo); }
+
+section, .caixa {
+  background: var(--card); border: 1px solid var(--linha); border-radius: 14px;
+  padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(48, 8, 107, .04);
+}
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
-th { font-weight: 600; color: #555; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th { font-weight: 600; color: var(--cinza); font-size: 13px; }
 td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+
 input, textarea, select, button { font: inherit; }
-input[type=text], input[type=password], input[type=number], textarea, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: #fff; }
+input[type=text], input[type=password], input[type=number], textarea, select {
+  width: 100%; padding: 9px 10px; border: 1px solid var(--linha); border-radius: 10px;
+  background: #fff; color: var(--texto);
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--lilas); border-color: var(--roxo); }
 textarea { min-height: 120px; }
-button { padding: 8px 14px; border: 0; border-radius: 6px; background: #12355b; color: #fff; cursor: pointer; }
-button.sec { background: #e9e9e5; color: #1d1d1f; }
-button.perigo { background: #a33; }
+button {
+  padding: 9px 18px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--roxo); color: #fff; font-family: Archivo, Inter, sans-serif; font-weight: 600;
+}
+button:hover { background: var(--roxo-marca); }
+button:disabled { opacity: .5; cursor: default; }
+button.sec { background: var(--lilas-claro); color: var(--roxo-marca); }
+button.sec:hover { background: #DCC9F4; }
+button.perigo { background: var(--perigo); }
+
 .linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-.num { font-size: 26px; font-weight: 600; }
-.rot { color: #666; font-size: 13px; }
-.barra { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-top: 8px; }
-.barra > div { height: 100%; background: #12355b; }
-.msg { white-space: pre-wrap; background: #f3f6f9; border: 1px solid #dde4ec; padding: 12px; border-radius: 6px; }
-.tag { font-size: 12px; padding: 2px 6px; border-radius: 4px; background: #eee; }
-.tag.ativa { background: #e2f0e4; color: #1e5b28; }
-.tag.pendente { background: #fff3d6; color: #7a5600; }
-.tag.pausada, .tag.descartada { background: #eee; color: #777; }
-.aviso { background: #fff3d6; border: 1px solid #f0d58c; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; }
-details summary { cursor: pointer; color: #12355b; }
+.num { font-family: Archivo, Inter, sans-serif; font-size: 28px; font-weight: 800; color: var(--roxo-marca); }
+.rot { color: var(--cinza); font-size: 13px; }
+.barra { height: 8px; background: var(--lilas-claro); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+.barra > div { height: 100%; background: var(--roxo); border-radius: 999px; }
+.msg { white-space: pre-wrap; background: var(--lilas-claro); border: 1px solid var(--linha); padding: 12px; border-radius: 10px; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--lilas-claro); color: var(--roxo-marca); }
+.tag.ativa { background: var(--ok-fundo); color: var(--ok-texto); }
+.tag.pendente { background: var(--aviso-fundo); color: var(--aviso-texto); }
+.tag.pausada, .tag.descartada { background: #EEE9F5; color: var(--cinza); }
+.aviso { background: var(--aviso-fundo); border: 1px solid var(--aviso-borda); color: var(--aviso-texto); padding: 10px 12px; border-radius: 10px; margin-bottom: 16px; }
+details summary { cursor: pointer; color: var(--roxo); }
 nav { margin-bottom: 18px; font-size: 14px; }
-nav a { margin-right: 14px; color: #12355b; }
+nav a { margin-right: 14px; }

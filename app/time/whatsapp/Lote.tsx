@@ -75,7 +75,7 @@ export default function Lote({ itens }: { itens: Item[] }) {
         <thead><tr><th>Enviado?</th><th>Contato</th><th>Tipo</th><th></th><th></th></tr></thead>
         <tbody>
           {lista.map((i) => (
-            <tr key={i.id} style={{ background: abertos.has(i.id) ? '#f3f6f9' : undefined }}>
+            <tr key={i.id} style={{ background: abertos.has(i.id) ? 'var(--lilas-claro)' : undefined }}>
               <td><input type="checkbox" checked={marcados.has(i.id)} onChange={() => alterna(i.id)} /></td>
               <td>{i.nome || '–'}<br /><span className="rot">+{i.contato}</span></td>
               <td>{i.tipo}{abertos.has(i.id) && <><br /><span className="rot">aberto</span></>}</td>

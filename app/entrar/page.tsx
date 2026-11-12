@@ -20,7 +20,7 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
       <form action={acao} className="caixa">
         <label className="rot">Senha</label>
         <input type="password" name="senha" autoFocus required />
-        {sp.erro && <p style={{ color: '#a33' }}>Senha incorreta.</p>}
+        {sp.erro && <p style={{ color: 'var(--perigo)' }}>Senha incorreta.</p>}
         <div style={{ marginTop: 12 }}><button>Entrar</button></div>
       </form>
     </div>
