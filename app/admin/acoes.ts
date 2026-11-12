@@ -1,5 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { exige } from '@/lib/auth';
 import { db, checa } from '@/lib/db';
 import { CANAIS, Canal } from '@/lib/config';
@@ -17,7 +18,7 @@ export async function salvaRespostas(fd: FormData) {
   const dia = String(fd.get('dia'));
   if (!Number.isFinite(total) || total < 0 || !/^\d{4}-\d{2}-\d{2}$/.test(dia)) return;
   await db().from('respostas').upsert({ dia, total });
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
 }
 
 export async function mudaStatus(fd: FormData) {
@@ -26,7 +27,7 @@ export async function mudaStatus(fd: FormData) {
   const status = String(fd.get('status'));
   if (!['ativa', 'pausada', 'descartada'].includes(status)) return;
   await db().from('versoes').update({ status }).eq('slug', slug);
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
 }
 
 export async function editaVersao(fd: FormData) {
@@ -36,7 +37,9 @@ export async function editaVersao(fd: FormData) {
   const assunto = fd.get('assunto') == null ? undefined : String(fd.get('assunto')).trim();
   if (!texto.includes('{link}')) throw new Error('O texto precisa ter {link}');
   await db().from('versoes').update({ texto, ...(assunto !== undefined ? { assunto } : {}) }).eq('slug', slug);
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
+  const { data } = await db().from('versoes').select('canal').eq('slug', slug).single();
+  redirect(`/admin/mensagens?canal=${data?.canal || 'direto'}`);
 }
 
 export async function importaContatos(fd: FormData) {
@@ -61,14 +64,14 @@ export async function importaContatos(fd: FormData) {
   for (let i = 0; i < registros.length; i += 500) {
     await db().from('fila').upsert(registros.slice(i, i + 500), { onConflict: 'canal,contato', ignoreDuplicates: true });
   }
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
 }
 
 export async function limpaErros(fd: FormData) {
   await exige('admin');
   const canal = String(fd.get('canal'));
   await db().from('fila').delete().eq('canal', canal).not('erro', 'is', null);
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
 }
 
 export async function geraSugestoes(fd: FormData) {
@@ -95,7 +98,7 @@ export async function geraSugestoes(fd: FormData) {
       assunto: canal === 'email' ? s.assunto || null : null, texto: s.texto, status: 'pendente',
     });
   }
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
 }
 
 export async function salvaNumero(fd: FormData) {
@@ -106,7 +109,8 @@ export async function salvaNumero(fd: FormData) {
   const limite = Math.max(1, Math.min(100, Number(fd.get('limite_dia')) || 40));
   if (!id || !nome || !instancia) throw new Error('Preencha id, nome e instância');
   await db().from('numeros').upsert({ id, nome, instancia, limite_dia: limite }, { onConflict: 'id' });
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
+  redirect('/admin/contatos');
 }
 
 export async function alternaNumero(fd: FormData) {
@@ -116,5 +120,5 @@ export async function alternaNumero(fd: FormData) {
   if (campo !== 'ativo' && campo !== 'responder') return;
   const valor = String(fd.get('valor')) === 'true';
   await db().from('numeros').update({ [campo]: valor }).eq('id', id);
-  revalidatePath('/admin');
+  revalidatePath('/admin', 'layout');
 }

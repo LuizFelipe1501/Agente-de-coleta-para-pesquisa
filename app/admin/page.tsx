@@ -1,55 +1,72 @@
 import { exige } from '@/lib/auth';
 import { db, checa } from '@/lib/db';
 import { config, CANAIS, NOME_CANAL, Canal } from '@/lib/config';
-import { chanceDeSerMelhor } from '@/lib/bandit';
 import { agoraBrasilia, dentroDaJanela } from '@/lib/versoes';
-import {
-  salvaRespostas, mudaStatus, editaVersao, importaContatos, limpaErros, geraSugestoes, salvaNumero, alternaNumero,
-} from './acoes';
-import { listaNumeros, enviadosHojeNumero } from '@/lib/numeros';
+import { listaNumeros } from '@/lib/numeros';
+import { salvaRespostas } from './acoes';
 
 export const dynamic = 'force-dynamic';
 
 type Linha = { slug: string; canal: Canal; angulo: string; status: string; envios: number; cliques: number };
-type V = { slug: string; texto: string; assunto: string | null };
 
 const pct = (a: number, b: number) => (b ? `${((100 * a) / b).toFixed(1)}%` : '–');
 
-export default async function Admin() {
+export default async function VisaoGeral() {
   await exige('admin');
 
   const [stats, versoes, respostas, fila, obj, lembretes] = await Promise.all([
     db().from('stats_versoes').select('*').order('slug'),
-    db().from('versoes').select('slug,texto,assunto'),
-    db().from('respostas').select('*').order('dia', { ascending: false }).limit(10),
-    db().from('fila').select('canal,enviado_em,erro,numero'),
-    db().from('objecoes').select('categoria,canal').gte('criado_em', new Date(Date.now() - 7 * 86400000).toISOString()),
+    db().from('versoes').select('slug,texto,status'),
+    db().from('respostas').select('*').order('dia', { ascending: false }).limit(7),
+    db().from('fila').select('canal,enviado_em,erro'),
+    db().from('objecoes').select('categoria').gte('criado_em', new Date(Date.now() - 7 * 86400000).toISOString()),
     db().from('envios').select('qtd').eq('tipo', 'lembrete'),
   ]);
   const S = checa(stats) as Linha[];
-  const textos = new Map((checa(versoes) as V[]).map((v) => [v.slug, v]));
+  const V = checa(versoes) as { slug: string; texto: string; status: string }[];
   const R = checa(respostas) as { dia: string; total: number }[];
-  const F = checa(fila) as { canal: string; enviado_em: string | null; erro: string | null; numero: string | null }[];
-  const numeros = await listaNumeros();
-  const hojePorNumero = Object.fromEntries(await Promise.all(numeros.map(async (n) => [n.id, await enviadosHojeNumero(n.id)])));
-  const O = checa(obj) as { categoria: string; canal: string }[];
+  const F = checa(fila) as { canal: string; enviado_em: string | null; erro: string | null }[];
+  const O = checa(obj) as { categoria: string }[];
   const totalLembretes = (checa(lembretes) as { qtd: number }[]).reduce((s, l) => s + l.qtd, 0);
+  const numeros = await listaNumeros();
 
   const totalResp = R[0]?.total ?? 0;
   const totalEnvios = S.reduce((s, l) => s + l.envios, 0);
   const totalCliques = S.reduce((s, l) => s + l.cliques, 0);
-  const hoje = agoraBrasilia().data;
 
   const contaObj: Record<string, number> = {};
   for (const o of O) contaObj[o.categoria] = (contaObj[o.categoria] || 0) + 1;
 
+  // O que ainda impede o bot de rodar
+  const pendencias: { texto: string; href: string; botao: string }[] = [];
+  const semTexto = V.filter((v) => v.status === 'ativa' && v.texto.includes('[COLE AQUI'));
+  if (semTexto.length) pendencias.push({ texto: `${semTexto.length} versão(ões) A ainda com texto provisório. O disparo desses canais fica parado.`, href: '/admin/mensagens', botao: 'Preencher mensagens' });
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) pendencias.push({ texto: 'E-mail não configurado (SMTP_USER e SMTP_PASS na Vercel).', href: 'https://vercel.com/dashboard', botao: 'Abrir Vercel' });
+  if (!process.env.GEMINI_API_KEY) pendencias.push({ texto: 'Chave do Gemini não configurada: respostas automáticas e sugestões desligadas.', href: 'https://aistudio.google.com', botao: 'Criar chave' });
+  if (numeros.length === 0) pendencias.push({ texto: 'Nenhum número de WhatsApp cadastrado.', href: '/admin/contatos', botao: 'Cadastrar números' });
+  if (!F.length) pendencias.push({ texto: 'Filas vazias: nenhum contato para disparar.', href: '/admin/contatos', botao: 'Adicionar contatos' });
+
   return (
     <>
-      <h1>Painel do recrutamento</h1>
-      <p className="sub">
-        Pesquisa EPPG/FGV · disparo automático {dentroDaJanela() ? 'dentro' : 'fora'} da janela agora ·{' '}
-        <a href="/time">página do time</a> · <a href="/admin/busca">buscar contatos</a> · <a href="/api/registro">baixar registro de versões (CSV)</a>
-      </p>
+      <div className="cabecalho">
+        <div>
+          <h1>Visão geral</h1>
+          <p className="sub">Disparo automático {dentroDaJanela() ? 'liberado agora' : 'fora do horário agora'} ({config.horaInicio}h–{config.horaFim}h, dias úteis)</p>
+        </div>
+        <a className="botao sec" href="/api/registro">Baixar registro (CSV)</a>
+      </div>
+
+      {pendencias.length > 0 && (
+        <section className="pendencias">
+          <h3>Para o bot rodar</h3>
+          {pendencias.map((p) => (
+            <div key={p.texto} className="pendencia">
+              <span>{p.texto}</span>
+              <a className="botao" href={p.href} target={p.href.startsWith('http') ? '_blank' : undefined}>{p.botao}</a>
+            </div>
+          ))}
+        </section>
+      )}
 
       <div className="grade">
         <div className="caixa">
@@ -63,159 +80,34 @@ export default async function Admin() {
       </div>
 
       <section>
-        <h3 style={{ marginTop: 0 }}>Total de respostas informado pela mestranda</h3>
+        <h3>Total de respostas informado pela mestranda</h3>
         <form action={salvaRespostas} className="linha">
-          <input type="text" name="dia" defaultValue={hoje} style={{ width: 130 }} />
-          <input type="number" name="total" min={0} placeholder="total acumulado" style={{ width: 160 }} required />
+          <input type="text" name="dia" defaultValue={agoraBrasilia().data} style={{ width: 140 }} />
+          <input type="number" name="total" min={0} placeholder="Total acumulado" style={{ width: 180 }} required />
           <button>Salvar</button>
-          <span className="rot">{R.slice(0, 5).map((r) => `${r.dia.slice(5)}: ${r.total}`).join(' · ')}</span>
         </form>
+        {R.length > 0 && <p className="rot" style={{ marginBottom: 0 }}>Últimos: {R.map((r) => `${r.dia.slice(8)}/${r.dia.slice(5, 7)} – ${r.total}`).join(' · ')}</p>}
       </section>
 
-      <h2>Números de WhatsApp</h2>
-      <section>
-        <p className="rot" style={{ marginTop: 0 }}>
-          Modo atual: <strong>{config.wppModo === 'evolution' ? 'envio automático (Evolution)' : 'assistido (o time clica para enviar)'}</strong>.
-          Cada contato pertence a um número só e só sai por ele.
-        </p>
-        {numeros.length > 0 && (
-          <table>
-            <thead><tr><th>Número</th><th>Instância</th><th className="n">Hoje</th><th className="n">Na fila</th><th className="n">Aguardando lembrete</th><th>Envio</th><th>Respostas automáticas</th></tr></thead>
-            <tbody>
-              {numeros.map((n) => {
-                const fn = F.filter((f) => f.numero === n.id);
-                return (
-                  <tr key={n.id}>
-                    <td><strong>{n.nome}</strong><br /><span className="rot">{n.id}</span></td>
-                    <td>{n.instancia}</td>
-                    <td className="n">{hojePorNumero[n.id]} / {n.limite_dia}</td>
-                    <td className="n">{fn.filter((f) => !f.enviado_em && !f.erro).length}</td>
-                    <td className="n">{fn.filter((f) => f.enviado_em).length}</td>
-                    <td>
-                      <form action={alternaNumero}><input type="hidden" name="id" value={n.id} /><input type="hidden" name="campo" value="ativo" /><input type="hidden" name="valor" value={String(!n.ativo)} />
-                        <button className={n.ativo ? 'sec' : ''}>{n.ativo ? 'Pausar' : 'Retomar'}</button></form>
-                    </td>
-                    <td>
-                      <form action={alternaNumero}><input type="hidden" name="id" value={n.id} /><input type="hidden" name="campo" value="responder" /><input type="hidden" name="valor" value={String(!n.responder)} />
-                        <button className="sec">{n.responder ? 'Ligadas – desligar' : 'Desligadas – ligar'}</button></form>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-        <details style={{ marginTop: 12 }}>
-          <summary>Adicionar ou editar número</summary>
-          <form action={salvaNumero} className="grade" style={{ marginTop: 8 }}>
-            <div><label className="rot">Id (curto, sem espaço)</label><input type="text" name="id" placeholder="luiz" required /></div>
-            <div><label className="rot">Dono do número</label><input type="text" name="nome" placeholder="Luiz Felipe" required /></div>
-            <div><label className="rot">Nome da instância na Evolution</label><input type="text" name="instancia" placeholder="luiz" required /></div>
-            <div><label className="rot">Limite por dia</label><input type="number" name="limite_dia" defaultValue={40} min={1} max={100} /></div>
-            <div style={{ alignSelf: 'end' }}><button>Salvar número</button></div>
-          </form>
-        </details>
-      </section>
-
-      {CANAIS.map((canal) => {
-        const linhas = S.filter((l) => l.canal === canal);
-        const ativas = linhas.filter((l) => l.status === 'ativa');
-        const chance = chanceDeSerMelhor(ativas);
-        const somaEnv = ativas.reduce((s, l) => s + l.envios, 0);
-        const auto = canal === 'email' || canal === 'wpp';
-        const fc = F.filter((f) => f.canal === canal);
-        return (
-          <div key={canal}>
-            <h2>{NOME_CANAL[canal]}</h2>
-            <section>
-              <table>
-                <thead>
-                  <tr><th>Versão</th><th>Ângulo</th><th>Status</th><th className="n">Envios</th><th className="n">Cliques</th><th className="n">Taxa</th><th className="n">Chance de ser a melhor</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {linhas.map((l) => {
-                    const v = textos.get(l.slug)!;
-                    return (
-                      <tr key={l.slug}>
-                        <td>
-                          <strong>{l.slug}</strong>
-                          <details>
-                            <summary>texto</summary>
-                            <form action={editaVersao} style={{ marginTop: 8, minWidth: 320 }}>
-                              <input type="hidden" name="slug" value={l.slug} />
-                              {canal === 'email' && <input type="text" name="assunto" defaultValue={v.assunto || ''} placeholder="Assunto" style={{ marginBottom: 6 }} />}
-                              <textarea name="texto" defaultValue={v.texto} />
-                              <button style={{ marginTop: 6 }}>Salvar texto</button>
-                            </form>
-                          </details>
-                        </td>
-                        <td>{l.angulo}</td>
-                        <td><span className={`tag ${l.status}`}>{l.status}</span></td>
-                        <td className="n">{l.envios}</td>
-                        <td className="n">{l.cliques}</td>
-                        <td className="n">{pct(l.cliques, l.envios)}</td>
-                        <td className="n">{l.status === 'ativa' && somaEnv > 0 ? `${Math.round(100 * (chance[l.slug] || 0))}%` : '–'}</td>
-                        <td>
-                          <div className="linha">
-                            {l.status !== 'ativa' && (
-                              <form action={mudaStatus}><input type="hidden" name="slug" value={l.slug} /><input type="hidden" name="status" value="ativa" /><button>{l.status === 'pendente' ? 'Aprovar' : 'Ativar'}</button></form>
-                            )}
-                            {l.status === 'ativa' && (
-                              <form action={mudaStatus}><input type="hidden" name="slug" value={l.slug} /><input type="hidden" name="status" value="pausada" /><button className="sec">Pausar</button></form>
-                            )}
-                            {l.status !== 'descartada' && (
-                              <form action={mudaStatus}><input type="hidden" name="slug" value={l.slug} /><input type="hidden" name="status" value="descartada" /><button className="sec">Descartar</button></form>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <form action={geraSugestoes} className="linha" style={{ marginTop: 12 }}>
-                <input type="hidden" name="canal" value={canal} />
-                <select name="quantas" defaultValue="2" style={{ width: 80 }}><option>1</option><option>2</option><option>3</option></select>
-                <button className="sec">Gerar sugestões de novas versões</button>
-                <span className="rot">Entram como pendentes e só rodam depois de aprovadas.</span>
-              </form>
-            </section>
-
-            {auto && (
-              <section>
-                <h3 style={{ marginTop: 0 }}>Fila de disparo</h3>
-                <p className="rot" style={{ marginTop: 0 }}>
-                  {fc.filter((f) => !f.enviado_em && !f.erro).length} aguardando · {fc.filter((f) => f.enviado_em).length} aguardando lembrete · {fc.filter((f) => f.erro).length} com erro ·
-                  {canal === 'email' ? `limite ${config.emailLimiteDia}/dia` : 'limite por número (acima)'}
-                </p>
-                <form action={importaContatos}>
-                  <input type="hidden" name="canal" value={canal} />
-                  {canal === 'wpp' && (
-                    <div style={{ marginBottom: 8 }}>
-                      <label className="rot">Número dono destes contatos (os contatos devem ser da rede dessa pessoa)</label>
-                      <select name="numero" required defaultValue="">
-                        <option value="" disabled>Escolha</option>
-                        {numeros.map((n) => <option key={n.id} value={n.id}>{n.nome} ({n.id})</option>)}
-                      </select>
-                    </div>
-                  )}
-                  <textarea name="lista" placeholder={canal === 'email' ? 'um por linha: email;nome\nfulana@orgao.gov.br;Fulana Souza' : 'um por linha: telefone;nome\n61999998888;Fulano'} />
-                  <div className="linha" style={{ marginTop: 8 }}>
-                    <button>Adicionar à fila</button>
-                    <span className="rot">Contatos que pediram para sair são descartados. A fila é apagada depois do lembrete.</span>
-                  </div>
-                </form>
-                {fc.some((f) => f.erro) && (
-                  <form action={limpaErros} style={{ marginTop: 8 }}>
-                    <input type="hidden" name="canal" value={canal} />
-                    <button className="perigo">Apagar contatos com erro</button>
-                  </form>
-                )}
-              </section>
-            )}
-          </div>
-        );
-      })}
+      <h2>Canais</h2>
+      <div className="grade">
+        {CANAIS.map((canal) => {
+          const ls = S.filter((l) => l.canal === canal && l.status === 'ativa');
+          const env = ls.reduce((s, l) => s + l.envios, 0);
+          const cli = ls.reduce((s, l) => s + l.cliques, 0);
+          const lider = [...ls].filter((l) => l.envios > 0).sort((a, b) => b.cliques / b.envios - a.cliques / a.envios)[0];
+          const naFila = F.filter((f) => f.canal === canal && !f.enviado_em && !f.erro).length;
+          return (
+            <div className="caixa canal" key={canal}>
+              <div className="rot">{NOME_CANAL[canal]}</div>
+              <div className="num">{pct(cli, env)}</div>
+              <div className="rot">{env} envios · {cli} cliques{canal === 'email' || canal === 'wpp' ? ` · ${naFila} na fila` : ''}</div>
+              <div className="rot">Na frente: {lider ? `${lider.slug} (${pct(lider.cliques, lider.envios)})` : 'ainda sem dados'}</div>
+              <a className="botao sec" href={`/admin/mensagens?canal=${canal}`}>Ver mensagens</a>
+            </div>
+          );
+        })}
+      </div>
 
       <h2>Motivos de recusa (últimos 7 dias)</h2>
       <section>

@@ -9,7 +9,6 @@ export default async function PaginaBusca() {
   await exige('admin');
   return (
     <>
-      <nav><a href="/admin">← Painel</a></nav>
       <h1>Buscar contatos</h1>
       <p className="sub">
         Lê páginas públicas de órgãos e extrai e-mails institucionais ({dominiosPermitidos().join(', ')}).

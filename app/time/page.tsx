@@ -29,11 +29,10 @@ export default async function Time({ searchParams }: { searchParams: Promise<{ c
     <>
       <h1>Mensagem do momento</h1>
       <p className="sub">Copie, troque o que está entre colchetes e envie. Depois registre quantas mandou.</p>
-      <nav>
-        <a href="/time?canal=direto" style={{ fontWeight: canal === 'direto' ? 700 : 400 }}>Para contatos</a>
-        <a href="/time?canal=grupo" style={{ fontWeight: canal === 'grupo' ? 700 : 400 }}>Para grupos</a>
-        <a href="/time/whatsapp">Fila de WhatsApp</a>
-      </nav>
+      <div className="abas">
+        <a href="/time?canal=direto" className={canal === 'direto' ? 'ativo' : ''}>Para contatos</a>
+        <a href="/time?canal=grupo" className={canal === 'grupo' ? 'ativo' : ''}>Para grupos</a>
+      </div>
 
       {sp.ok && Number(sp.ok) > 0 && <div className="aviso">Registrado: {sp.ok} envio(s). Obrigado!</div>}
 

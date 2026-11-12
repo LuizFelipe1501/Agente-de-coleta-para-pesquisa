@@ -58,7 +58,6 @@ export default async function FilaWhatsApp({ searchParams }: { searchParams: Pro
   if (!numero) {
     return (
       <>
-        <nav><a href="/time">← Mensagem do momento</a></nav>
         <h1>Fila de WhatsApp</h1>
         <p className="sub">Escolha o seu número. Você só vê os contatos que são seus.</p>
         <section className="linha">
@@ -88,7 +87,6 @@ export default async function FilaWhatsApp({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <nav><a href="/time">← Mensagem do momento</a></nav>
       <h1>Fila de WhatsApp – {numero.nome}</h1>
       <p className="sub">
         Abra as conversas uma a uma ou várias de uma vez, envie em cada aba e confirme no fim. Envie do seu WhatsApp,
