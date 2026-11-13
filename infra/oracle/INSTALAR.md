@@ -12,6 +12,14 @@ Resultado: uma máquina gratuita da Oracle, ligada o tempo todo, rodando a Evolu
 3. Depois de criada, abra a instância > Subnet > Security List > **Add Ingress Rules**: origem `0.0.0.0/0`, TCP, portas `80,443`.
 4. Se aparecer "Out of capacity", tente outro horário ou outra availability domain.
 
+### Se der "Out of capacity" no Ampere
+
+O Ampere gratuito de São Paulo vive sem vaga. Use a máquina pequena, que também é Always Free e quase sempre tem vaga:
+
+- Shape: **Specialty and previous generation > VM.Standard.E2.1.Micro** (1 OCPU, 1 GB).
+- O `instalar.sh` percebe a memória baixa sozinho: cria 3 GB de swap e sobe a versão enxuta (`docker-compose.micro.yml`, sem Redis e com Postgres pequeno).
+- Aguenta os 4 números no volume da pesquisa. Se um dia sair vaga no Ampere, dá para migrar.
+
 ## 2. Instalar a Evolution (~10 min)
 
 No seu computador:

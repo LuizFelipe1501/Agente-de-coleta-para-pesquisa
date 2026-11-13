@@ -14,6 +14,20 @@ if ! command -v docker >/dev/null; then
   sudo usermod -aG docker "$USER" || true
 fi
 
+# Máquina pequena (VM.Standard.E2.1.Micro, 1 GB): cria 3 GB de swap e usa a configuração enxuta.
+MEM_MB=$(free -m | awk '/^Mem:/{print $2}')
+if [ "$MEM_MB" -lt 2000 ]; then
+  echo "==> Pouca memória ($MEM_MB MB): criando swap de 3 GB e usando o modo enxuto"
+  if [ ! -f /swapfile ]; then
+    sudo fallocate -l 3G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+    echo 'vm.swappiness=20' | sudo tee /etc/sysctl.d/99-swap.conf >/dev/null && sudo sysctl -p /etc/sysctl.d/99-swap.conf >/dev/null
+  fi
+  COMPOSE_ARQ="docker-compose.micro.yml"
+else
+  COMPOSE_ARQ="docker-compose.yml"
+fi
+
 echo "==> Liberando portas 80 e 443 no firewall da VM"
 # As imagens Ubuntu da Oracle vêm com regras iptables que bloqueiam tudo além do SSH.
 for p in 80 443; do
@@ -48,7 +62,7 @@ if ! sudo docker pull "${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.7}"; th
 fi
 
 echo "==> Subindo os serviços"
-sudo docker compose up -d
+sudo docker compose -f "$COMPOSE_ARQ" up -d
 
 echo
 echo "Pronto. Anote estes dados para a Vercel:"
