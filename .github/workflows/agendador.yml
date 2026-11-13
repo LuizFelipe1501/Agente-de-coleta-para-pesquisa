@@ -14,7 +14,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Disparo
-        run: curl -sS --max-time 90 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.BOT_URL }}/api/cron/disparo"
+        run: |
+          curl -sS --fail-with-body --max-time 90 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.BOT_URL }}/api/cron/disparo"
       - name: Caixa de e-mail
         if: always()
-        run: curl -sS --max-time 90 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.BOT_URL }}/api/cron/caixa"
+        run: |
+          curl -sS --fail-with-body --max-time 90 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.BOT_URL }}/api/cron/caixa"
