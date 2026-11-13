@@ -14,6 +14,8 @@ function transporte() {
   return transp;
 }
 
+export const MARCA_EMAIL = 'pesquisa-capital.bot';
+
 export function remetente() {
   const email = process.env.EMAIL_REMETENTE || process.env.SMTP_USER || '';
   const nome = process.env.NOME_REMETENTE || 'Capital Consultoria Júnior – FGV';
@@ -31,6 +33,8 @@ export async function enviaEmail(opts: {
     text: opts.texto,
     inReplyTo: opts.inReplyTo,
     references: opts.references,
+    // marca própria: a leitura da caixa só mexe em respostas a e-mails do bot
+    messageId: `<${Date.now().toString(36)}.${Math.random().toString(36).slice(2, 10)}@${MARCA_EMAIL}>`,
     headers: {
       'List-Unsubscribe': `<mailto:${r.email}?subject=remover>`,
     },

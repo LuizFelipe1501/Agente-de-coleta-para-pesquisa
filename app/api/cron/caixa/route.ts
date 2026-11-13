@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { config } from '@/lib/config';
 import { cronAutorizado } from '@/lib/auth';
 import { decide } from '@/lib/agente';
-import { enviaEmail, remetente } from '@/lib/envio';
+import { enviaEmail, remetente, MARCA_EMAIL } from '@/lib/envio';
 import { registraOptout } from '@/lib/versoes';
 
 export const dynamic = 'force-dynamic';
@@ -50,12 +50,19 @@ export async function GET(req: Request) {
   await imap.connect();
   const trava = await imap.getMailboxLock('INBOX');
   try {
-    const uids = (await imap.search({ seen: false }, { uid: true })) || [];
+    // Só respostas a e-mails enviados pelo bot. O resto da caixa não é tocado.
+    const uids = (await imap.search({
+      seen: false,
+      or: [{ header: { 'in-reply-to': MARCA_EMAIL } }, { header: { references: MARCA_EMAIL } }],
+    }, { uid: true })) || [];
     for (const uid of uids.slice(0, 15)) {
       const msg = await imap.fetchOne(String(uid), { source: true }, { uid: true });
       if (!msg || !msg.source) continue;
       const m = await simpleParser(msg.source);
       const de = m.from?.value?.[0]?.address?.toLowerCase() || '';
+      const refs = [m.inReplyTo, ...(Array.isArray(m.references) ? m.references : m.references ? [m.references] : [])]
+        .filter(Boolean).join(' ');
+      if (!refs.includes(MARCA_EMAIL)) continue; // não é resposta ao bot: não mexe
 
       if (!de || de === eu || ehAutomatica(m.headers as any) || /mailer-daemon|postmaster|no-?reply/i.test(de)) {
         await imap.messageFlagsAdd(String(uid), ['\\Seen'], { uid: true });
