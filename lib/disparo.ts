@@ -8,7 +8,7 @@ import {
   criaAlocador, versao, renderiza, nomeDoEmail, prontaParaEnvio, estaNoOptout, dentroDaJanela, enviadosHoje, linkDe,
 } from './versoes';
 import { enviaEmail, enviaWhatsApp, espera } from './envio';
-import { LEMBRETE_EMAIL, LEMBRETE_WPP } from './lembretes';
+import { LEMBRETE_EMAIL, LEMBRETE_WPP, ASSUNTO_LEMBRETE_EMAIL } from './lembretes';
 import { listaNumeros, enviadosHojeNumero, registraContatado, Numero } from './numeros';
 
 type Linha = { id: number; canal: 'email' | 'wpp'; contato: string; nome: string | null; slug: string | null; enviado_em: string | null };
@@ -41,9 +41,9 @@ async function processa(canal: 'email' | 'wpp', log: string[], numero?: Numero) 
     if (vagas <= 0) break;
     if (await estaNoOptout(l.contato)) { await db().from('fila').delete().eq('id', l.id); continue; }
     try {
-      const nome = (l.nome || '').split(/\s+/)[0];
+      const nome = (l.nome || (canal === 'email' ? nomeDoEmail(l.contato) : '') || '').split(/\s+/)[0];
       const link = linkDe(l.slug!);
-      if (canal === 'email') await enviar(l, LEMBRETE_EMAIL(nome || 'servidor(a)', link), 'Lembrete: pesquisa FGV com servidores públicos');
+      if (canal === 'email') await enviar(l, LEMBRETE_EMAIL(nome, link), ASSUNTO_LEMBRETE_EMAIL);
       else await enviar(l, LEMBRETE_WPP(nome, link));
       await db().from('envios').insert({ slug: l.slug, tipo: 'lembrete', numero: numero?.id ?? null });
       await db().from('fila').delete().eq('id', l.id); // terminou o ciclo: some da fila

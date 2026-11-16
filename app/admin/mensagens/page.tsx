@@ -2,17 +2,19 @@ import { exige } from '@/lib/auth';
 import { db, checa } from '@/lib/db';
 import { CANAIS, NOME_CANAL, Canal } from '@/lib/config';
 import { chanceDeSerMelhor } from '@/lib/bandit';
-import { mudaStatus, editaVersao, geraSugestoes, usaSo } from '../acoes';
+import { mudaStatus, editaVersao, geraSugestoes, usaSo, enviaCorrecao } from '../acoes';
+import BotaoEnviar from '../BotaoEnviar';
 import { renderiza, camposAbertos } from '@/lib/versoes';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 type Linha = { slug: string; canal: Canal; angulo: string; status: string; envios: number; cliques: number };
 type V = { slug: string; texto: string; assunto: string | null };
 
 const pct = (a: number, b: number) => (b ? `${((100 * a) / b).toFixed(1)}%` : '–');
 
-export default async function Mensagens({ searchParams }: { searchParams: Promise<{ canal?: string; editar?: string }> }) {
+export default async function Mensagens({ searchParams }: { searchParams: Promise<{ canal?: string; editar?: string; aviso?: string }> }) {
   await exige('admin');
   const sp = await searchParams;
   const canal = (CANAIS as readonly string[]).includes(sp.canal || '') ? (sp.canal as Canal) : 'direto';
@@ -24,6 +26,12 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
   const somaEnv = ativas.reduce((s, l) => s + l.envios, 0);
   const editando = sp.editar ? textos.get(sp.editar) : undefined;
   const pendentes = S.filter((l) => l.status === 'pendente').length;
+  // quantos já receberam cada versão e ainda estão na fila (podem receber correção)
+  const naFila = new Map<string, number>();
+  if (canal === 'email') {
+    const F = checa(await db().from('fila').select('slug').eq('canal', 'email').not('enviado_em', 'is', null)) as { slug: string }[];
+    for (const f of F) naFila.set(f.slug, (naFila.get(f.slug) || 0) + 1);
+  }
 
   return (
     <>
@@ -76,6 +84,8 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
         </section>
       )}
 
+      {sp.aviso && <div className="aviso">{sp.aviso}</div>}
+
       {pendentes > 0 && <div className="aviso">{pendentes} sugestão(ões) aguardando aprovação neste canal.</div>}
 
       <section>
@@ -120,6 +130,20 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
           </tbody>
         </table>
       </section>
+
+      {canal === 'email' && [...naFila.entries()].some(([, n]) => n > 0) && (
+        <section>
+          <h3>Reenviar com correção</h3>
+          <p className="rot">Manda o texto atual da versão escolhida, com um pedido de desculpas no começo, para quem já recebeu essa versão. Vale como o lembrete: depois disso a pessoa não recebe mais nada. Até 15 por clique.</p>
+          {[...naFila.entries()].filter(([, n]) => n > 0).map(([slug, n]) => (
+            <form key={slug} action={enviaCorrecao} className="linha" style={{ marginBottom: 8 }}>
+              <input type="hidden" name="slug" value={slug} />
+              <label className="linha"><input type="checkbox" name="confirmo" value="sim" style={{ width: 'auto' }} /> Confirmo o reenvio para {n} pessoa(s) que receberam {slug}</label>
+              <BotaoEnviar texto="Enviar correção" />
+            </form>
+          ))}
+        </section>
+      )}
 
       <section>
         <h3>Sugestões da IA</h3>

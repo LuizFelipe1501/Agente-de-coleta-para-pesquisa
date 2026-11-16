@@ -151,3 +151,40 @@ export async function disparaAgora() {
   revalidatePath('/admin', 'layout');
   redirect(`/admin?disparo=${encodeURIComponent(resumo.slice(0, 900))}`);
 }
+
+// Correção: reenvia o texto atual de uma versão de e-mail, com um pedido de desculpas no topo,
+// para quem já recebeu essa versão e ainda não recebeu lembrete. Conta como o lembrete
+// (o contato sai da fila depois), então a pessoa não recebe mais nada além disso.
+export async function enviaCorrecao(fd: FormData) {
+  await exige('admin');
+  const slug = String(fd.get('slug'));
+  if (fd.get('confirmo') !== 'sim') redirect(`/admin/mensagens?canal=email&aviso=${encodeURIComponent('Marque a confirmação antes de enviar a correção.')}`);
+  const { renderiza, nomeDoEmail, prontaParaEnvio, versao: le } = await import('@/lib/versoes');
+  const { enviaEmail } = await import('@/lib/envio');
+  const v = await le(slug);
+  if (v.canal !== 'email' || !prontaParaEnvio(v.texto, 'email')) redirect(`/admin/mensagens?canal=email&aviso=${encodeURIComponent('Corrija o texto desta versão antes de reenviar.')}`);
+  const alvos = checa(
+    await db().from('fila').select('id,contato,nome').eq('canal', 'email').eq('slug', slug).not('enviado_em', 'is', null).limit(15),
+  ) as { id: number; contato: string; nome: string | null }[];
+  let ok = 0; let falhas = 0;
+  for (const l of alvos) {
+    if (await estaNoOptout(l.contato)) { await db().from('fila').delete().eq('id', l.id); continue; }
+    const nome = l.nome || nomeDoEmail(l.contato);
+    const corpo = renderiza(v.texto, slug, nome).replace(/^\s*Prezad[oa]\(?a?\)?[^\n]*\n+/i, '');
+    const saudacao = renderiza('Prezado(a) {nome},', slug, nome);
+    const texto = `${saudacao}\n\nPeço desculpas: o convite que enviamos anteriormente saiu com erros de formatação. Segue abaixo a versão correta.\n\n${corpo}`;
+    const assunto = `Correção: ${v.assunto ? renderiza(v.assunto, slug, nome) : 'convite para pesquisa de mestrado da FGV'}`;
+    try {
+      await enviaEmail({ para: l.contato, assunto, texto });
+      await db().from('envios').insert({ slug, tipo: 'lembrete' });
+      await db().from('fila').delete().eq('id', l.id);
+      ok++;
+    } catch (e: any) {
+      await db().from('fila').update({ erro: String(e.message).slice(0, 300) }).eq('id', l.id);
+      falhas++;
+    }
+  }
+  revalidatePath('/admin', 'layout');
+  const resto = (checa(await db().from('fila').select('id').eq('canal', 'email').eq('slug', slug).not('enviado_em', 'is', null)) as unknown[]).length;
+  redirect(`/admin/mensagens?canal=email&aviso=${encodeURIComponent(`Correção enviada para ${ok} contato(s)${falhas ? `, ${falhas} com erro` : ''}.${resto ? ` Faltam ${resto}: clique de novo.` : ''}`)}`);
+}

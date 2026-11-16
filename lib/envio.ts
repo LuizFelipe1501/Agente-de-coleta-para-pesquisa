@@ -22,6 +22,18 @@ export function remetente() {
   return { email, nome, formatado: `"${nome}" <${email}>` };
 }
 
+// Versão HTML do e-mail: o endereço do link fica escondido atrás de um texto clicável.
+// A versão em texto puro continua indo junto (leitores que não mostram HTML).
+const TEXTO_DO_LINK = 'Acessar o questionário';
+export function emailHtml(texto: string): string {
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const corpo = esc(texto).replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)]/g, (url) => {
+    const pesquisa = /\/p\/[a-z0-9-]+$/i.test(url) || /surveymonkey\.com/i.test(url);
+    return `<a href="${url}" style="color:#45108A;font-weight:bold">${pesquisa ? TEXTO_DO_LINK : url}</a>`;
+  });
+  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#222">${corpo.replace(/\n/g, '<br>')}</div>`;
+}
+
 export async function enviaEmail(opts: {
   para: string; assunto: string; texto: string; inReplyTo?: string; references?: string[];
 }) {
@@ -31,6 +43,7 @@ export async function enviaEmail(opts: {
     to: opts.para,
     subject: opts.assunto,
     text: opts.texto,
+    html: emailHtml(opts.texto),
     inReplyTo: opts.inReplyTo,
     references: opts.references,
     // marca própria: a leitura da caixa só mexe em respostas a e-mails do bot

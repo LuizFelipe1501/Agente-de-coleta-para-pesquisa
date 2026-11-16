@@ -1,11 +1,15 @@
+// Lembrete de e-mail: tom formal, mesmo padrão do convite. Sem nome, fica "Prezado(a),".
+export const ASSUNTO_LEMBRETE_EMAIL = 'Lembrete: convite para pesquisa de mestrado da FGV com servidores públicos';
 export const LEMBRETE_EMAIL = (nome: string, link: string) =>
-  `Prezado(a) ${nome},
+  `Prezado(a)${nome ? ' ' + nome : ''},
 
-Passando só para lembrar da pesquisa de mestrado da EPPG/FGV com servidores públicos, sobre tomada de decisão e uso de IA. Leva cerca de 15 minutos e é anônima:
-${link}
+Retomo o convite enviado há alguns dias para a pesquisa de mestrado da FGV Brasília sobre tomada de decisão, letramento digital e uso de Inteligência Artificial no setor público. O questionário leva cerca de 15 minutos, é anônimo e a participação é voluntária.
 
-Se já respondeu, muito obrigado. Este é o último contato sobre o assunto.
+Acesse o questionário aqui: ${link}
 
+Caso já tenha respondido, agradeço a colaboração. Este é o último contato sobre o assunto.
+
+Atenciosamente,
 Capital Consultoria Júnior – FGV`;
 
 export const LEMBRETE_WPP = (nome: string, link: string) =>
