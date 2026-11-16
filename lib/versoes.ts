@@ -71,7 +71,12 @@ export function linkDe(slug: string): string {
 export function renderiza(texto: string, slug: string, nome?: string | null, padraoNome = ''): string {
   const n = (nome || '').trim().split(/\s+/)[0] || padraoNome;
   let t = texto.replaceAll('{link}', linkDe(slug));
-  if (!n) t = t.replace(/,\s*\{nome\}/g, '').replace(/\{nome\},?\s*/g, '');
+  if (!n) {
+    t = t
+      .replace(/,[ \t]*\{nome\}/g, '') //            "Olá, {nome}!"          -> "Olá!"
+      .replace(/[ \t]+\{nome\}(?=[,!.:;?])/g, '') // "Prezado(a) {nome},"    -> "Prezado(a),"
+      .replace(/\{nome\},?[ \t]*/g, ''); //           "{nome}, sua opinião"   -> "sua opinião"
+  }
   return t.replaceAll('{nome}', n);
 }
 
