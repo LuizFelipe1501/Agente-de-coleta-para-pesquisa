@@ -33,9 +33,13 @@ export async function mudaStatus(fd: FormData) {
 export async function editaVersao(fd: FormData) {
   await exige('admin');
   const slug = String(fd.get('slug'));
-  const texto = String(fd.get('texto') || '').trim();
+  let texto = String(fd.get('texto') || '').trim();
   const assunto = fd.get('assunto') == null ? undefined : String(fd.get('assunto')).trim();
-  if (!texto.includes('{link}')) throw new Error('O texto precisa ter {link}');
+  if (!texto) return;
+  // link da pesquisa colado direto vira {link} (assim o clique é contado)
+  texto = texto.replace(/https?:\/\/(pt\.|www\.)?surveymonkey\.com\/r\/[A-Za-z0-9]+/g, '{link}');
+  // sem {link}, coloca no fim em vez de dar erro
+  if (!texto.includes('{link}')) texto = `${texto}\n\n{link}`;
   await db().from('versoes').update({ texto, ...(assunto !== undefined ? { assunto } : {}) }).eq('slug', slug);
   revalidatePath('/admin', 'layout');
   const { data } = await db().from('versoes').select('canal').eq('slug', slug).single();
