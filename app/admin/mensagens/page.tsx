@@ -134,7 +134,7 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
       {canal === 'email' && [...naFila.entries()].some(([, n]) => n > 0) && (
         <section>
           <h3>Reenviar com correção</h3>
-          <p className="rot">Manda o texto atual da versão escolhida, com um pedido de desculpas no começo, para quem já recebeu essa versão. Vale como o lembrete: depois disso a pessoa não recebe mais nada. Até 15 por clique.</p>
+          <p className="rot">Manda o convite certo (a única versão ativa, hoje {ativas.length === 1 ? ativas[0].slug : '—'}) com um pedido de desculpas no começo, para quem recebeu a versão escolhida. Vale como o lembrete: depois disso a pessoa não recebe mais nada. Até 15 por clique.</p>
           {[...naFila.entries()].filter(([, n]) => n > 0).map(([slug, n]) => (
             <form key={slug} action={enviaCorrecao} className="linha" style={{ marginBottom: 8 }}>
               <input type="hidden" name="slug" value={slug} />
