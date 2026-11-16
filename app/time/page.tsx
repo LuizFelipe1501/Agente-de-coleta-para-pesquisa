@@ -38,7 +38,7 @@ export default async function Time({ searchParams }: { searchParams: Promise<{ c
 
       {!v ? (
         <section>Nenhuma versão ativa para este canal. Fale com quem coordena o projeto.</section>
-      ) : !prontaParaEnvio(v.texto) ? (
+      ) : !prontaParaEnvio(v.texto, v.canal) ? (
         <section>A versão {v.slug} ainda não tem texto. Peça para quem coordena preencher no painel.</section>
       ) : (
         <section>

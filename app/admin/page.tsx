@@ -43,7 +43,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: Promi
   // O que ainda impede o bot de rodar
   const pendencias: { texto: string; href: string; botao: string }[] = [];
   const semPronta = (CANAIS as readonly Canal[]).filter(
-    (c) => !V.some((v) => v.canal === c && v.status === 'ativa' && prontaParaEnvio(v.texto)),
+    (c) => !V.some((v) => v.canal === c && v.status === 'ativa' && prontaParaEnvio(v.texto, v.canal)),
   );
   if (semPronta.length) pendencias.push({ texto: `Sem mensagem pronta e ativa em: ${semPronta.map((c) => NOME_CANAL[c]).join(', ')}.`, href: '/admin/mensagens', botao: 'Escrever mensagens' });
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) pendencias.push({ texto: 'E-mail não configurado (SMTP_USER e SMTP_PASS na Vercel).', href: 'https://vercel.com/dashboard', botao: 'Abrir Vercel' });

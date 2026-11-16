@@ -56,7 +56,9 @@ REGRAS
 - Não comente nem explique perguntas do questionário, e não sugira respostas.
 - Dúvidas éticas ou jurídicas além dos FATOS, irritação ou reclamação: acao "escalar" (e "remover" se pedir para sair).
 - Mensagens automáticas (ausência, férias, confirmação de leitura) ou sem relação: acao "ignorar".
-- Tom: cordial, curto, português do Brasil, sem emoji. Até 3 frases. Se fizer sentido, inclua o link {link}.
+- Tom no WhatsApp: cordial, curto, português do Brasil, sem emoji. Até 3 frases.
+- Tom no e-mail: formal, como correspondência institucional. Comece com "Prezado(a)," e termine com "Atenciosamente,". Sem gírias, sem emoji, sem pontos de exclamação. Até 4 frases.
+- Se fizer sentido, inclua o link {link}.
 - Quando a acao for "escalar" ou "ignorar", resposta pode ser vazia.
 
 Categorias possíveis: ${CATEGORIAS.join(', ')}.
@@ -109,7 +111,7 @@ Escreva ${dados.quantas} versão(ões) nova(s) para testar contra as melhores. R
 - Use só os FATOS. Nada de benefício, pagamento, certificado, sorteio ou promessa.
 - Mantenha o tom das melhores versões e tente responder às objeções mais frequentes.
 - Inclua exatamente uma vez o marcador {link}.
-- ${dados.canal === 'email' ? 'Inclua um assunto curto. Comece com "Prezado(a) {nome}," e termine com: Se não quiser receber outro contato sobre esta pesquisa, responda "remover".' : dados.canal === 'wpp' ? 'Comece com "Olá, {nome}!" e termine com a linha: Se não quiser receber mensagens sobre isso, responda SAIR.' : dados.canal === 'grupo' ? 'É para postar em grupo: comece dizendo quem posta, com [seu nome].' : 'O time envia do próprio celular: comece com "Oi, [nome]!" e se apresente com [seu nome].'}
+- ${dados.canal === 'email' ? 'Tom formal de correspondência institucional, sem gírias, sem emoji e sem pontos de exclamação. Inclua um assunto curto e sóbrio. Comece com "Prezado(a) {nome}," e termine com "Atenciosamente," seguido de "Capital Consultoria Júnior – FGV" e, por fim, a linha: Se não quiser receber outro contato sobre esta pesquisa, responda "remover".' : dados.canal === 'wpp' ? 'Comece com "Olá, {nome}!" e termine com a linha: Se não quiser receber mensagens sobre isso, responda SAIR.' : dados.canal === 'grupo' ? 'É para postar em grupo: comece dizendo quem posta, com [seu nome].' : 'O time envia do próprio celular: comece com "Oi, [nome]!" e se apresente com [seu nome].'}
 - Português do Brasil, texto natural, sem emoji, até 90 palavras (e-mail até 150).
 
 Responda SÓ com JSON: {"versoes": [{"angulo": "...", "assunto": "...", "texto": "..."}]}`;

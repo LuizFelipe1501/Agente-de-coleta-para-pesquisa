@@ -44,8 +44,11 @@ export async function usaSo(fd: FormData) {
 export async function editaVersao(fd: FormData) {
   await exige('admin');
   const slug = String(fd.get('slug'));
-  let texto = normalizaCampos(String(fd.get('texto') || '').trim());
-  const assunto = fd.get('assunto') == null ? undefined : normalizaCampos(String(fd.get('assunto')).trim());
+  const { data: atual } = await db().from('versoes').select('canal').eq('slug', slug).single();
+  // nos canais automáticos, [Nome] / {{link}} viram {nome} / {link}; nos do time os colchetes ficam
+  const ajusta = (t: string) => (atual?.canal === 'email' || atual?.canal === 'wpp' ? normalizaCampos(t) : t.replace(/\{\{\s*link\s*\}\}/gi, '{link}'));
+  let texto = ajusta(String(fd.get('texto') || '').trim());
+  const assunto = fd.get('assunto') == null ? undefined : ajusta(String(fd.get('assunto')).trim());
   if (!texto) return;
   // link da pesquisa colado direto vira {link} (assim o clique é contado)
   texto = texto.replace(/https?:\/\/(pt\.|www\.)?surveymonkey\.com\/r\/[A-Za-z0-9]+/g, '{link}');

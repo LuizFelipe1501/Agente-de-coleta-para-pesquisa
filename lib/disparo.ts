@@ -72,7 +72,7 @@ async function processa(canal: 'email' | 'wpp', log: string[], numero?: Numero) 
     const slug = aloc.proxima();
     if (!cache.has(slug)) cache.set(slug, await versao(slug));
     const v = cache.get(slug)!;
-    if (!prontaParaEnvio(v.texto) || (v.assunto && !prontaParaEnvio(v.assunto))) { log.push(`${rotulo}: versão ${slug} com campo a preencher, parando`); return; }
+    if (!prontaParaEnvio(v.texto, canal) || (v.assunto && !prontaParaEnvio(v.assunto, canal))) { log.push(`${rotulo}: versão ${slug} com campo a preencher, parando`); return; }
     const nome = l.nome || (canal === 'email' ? nomeDoEmail(l.contato) : null);
     const texto = renderiza(v.texto, slug, nome);
     const assunto = v.assunto ? renderiza(v.assunto, slug, nome).trim() : undefined;

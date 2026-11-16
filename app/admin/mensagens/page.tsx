@@ -52,9 +52,9 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
             )}
             <label className="rot">Texto. Use {'{link}'} onde vai o link da pesquisa{canal === 'email' || canal === 'wpp' ? ' e {nome} para o primeiro nome' : ''}.</label>
             <textarea name="texto" defaultValue={editando.texto} style={{ minHeight: 220 }} />
-            {camposAbertos(`${editando.assunto || ''}\n${editando.texto}`).length > 0 && (
+            {camposAbertos(`${editando.assunto || ''}\n${editando.texto}`, canal).length > 0 && (
               <div className="aviso">
-                Esta versão não é enviada enquanto tiver campos entre colchetes para preencher: <strong>{camposAbertos(`${editando.assunto || ''}\n${editando.texto}`).join(', ')}</strong>. Escreva o conteúdo no lugar deles. Para o nome da pessoa use {'{nome}'} e para o link use {'{link}'}.
+                Esta versão não é enviada enquanto tiver campos entre colchetes para preencher: <strong>{camposAbertos(`${editando.assunto || ''}\n${editando.texto}`, canal).join(', ')}</strong>. Escreva o conteúdo no lugar deles. Para o nome da pessoa use {'{nome}'} e para o link use {'{link}'}.
               </div>
             )}
             <div className="previa-envio">
@@ -86,7 +86,7 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
           <tbody>
             {S.map((l) => {
               const v = textos.get(l.slug)!;
-              const abertos = camposAbertos(`${v.assunto || ''}\n${v.texto}`);
+              const abertos = camposAbertos(`${v.assunto || ''}\n${v.texto}`, canal);
               const provisoria = abertos.length > 0;
               return (
                 <tr key={l.slug}>
