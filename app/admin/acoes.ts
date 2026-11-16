@@ -30,6 +30,17 @@ export async function mudaStatus(fd: FormData) {
   revalidatePath('/admin', 'layout');
 }
 
+// Deixa só esta versão ativa no canal; as outras ativas ficam pausadas.
+export async function usaSo(fd: FormData) {
+  await exige('admin');
+  const slug = String(fd.get('slug'));
+  const { data } = await db().from('versoes').select('canal').eq('slug', slug).single();
+  if (!data) return;
+  await db().from('versoes').update({ status: 'pausada' }).eq('canal', data.canal).eq('status', 'ativa').neq('slug', slug);
+  await db().from('versoes').update({ status: 'ativa' }).eq('slug', slug);
+  revalidatePath('/admin', 'layout');
+}
+
 export async function editaVersao(fd: FormData) {
   await exige('admin');
   const slug = String(fd.get('slug'));

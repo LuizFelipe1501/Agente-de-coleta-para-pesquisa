@@ -122,3 +122,7 @@ section h3 { margin-top: 0; }
 .contadores .num { font-size: 24px; }
 .canal { display: flex; flex-direction: column; gap: 4px; }
 .canal a.botao { margin-top: 10px; align-self: flex-start; }
+
+.previa-envio { margin-top: 14px; padding: 12px 14px; background: var(--lilas-claro, #E9DDF8); border-radius: 10px; }
+.previa-envio pre { white-space: pre-wrap; font-family: inherit; font-size: 14px; margin: 4px 0 10px; color: var(--texto, #2A1155); }
+.previa-envio p { margin: 4px 0; }

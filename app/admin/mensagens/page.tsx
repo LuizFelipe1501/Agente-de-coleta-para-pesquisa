@@ -2,7 +2,8 @@ import { exige } from '@/lib/auth';
 import { db, checa } from '@/lib/db';
 import { CANAIS, NOME_CANAL, Canal } from '@/lib/config';
 import { chanceDeSerMelhor } from '@/lib/bandit';
-import { mudaStatus, editaVersao, geraSugestoes } from '../acoes';
+import { mudaStatus, editaVersao, geraSugestoes, usaSo } from '../acoes';
+import { renderiza } from '@/lib/versoes';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
   return (
     <>
       <h1>Mensagens</h1>
-      <p className="sub">Cada canal testa suas versões. O bot manda mais as que geram mais cliques.</p>
+      <p className="sub">O bot só envia os textos ativos, exatamente como estão escritos. Com mais de uma versão ativa, ele reparte os envios e manda mais a que gera mais cliques. Para mandar só o seu texto, use "Usar só esta".</p>
 
       <div className="abas">
         {CANAIS.map((c) => (
@@ -51,6 +52,17 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
             )}
             <label className="rot">Texto. Use {'{link}'} onde vai o link da pesquisa{canal === 'email' || canal === 'wpp' ? ' e {nome} para o primeiro nome' : ''}.</label>
             <textarea name="texto" defaultValue={editando.texto} style={{ minHeight: 220 }} />
+            <div className="previa-envio">
+              <label className="rot">Como sai hoje (texto salvo), para um contato chamado Maria:</label>
+              {canal === 'email' && editando.assunto && <p><strong>Assunto:</strong> {renderiza(editando.assunto, editando.slug, 'Maria')}</p>}
+              <pre>{renderiza(editando.texto, editando.slug, 'Maria')}</pre>
+              {canal !== 'direto' && canal !== 'grupo' && (
+                <>
+                  <label className="rot">E para um contato sem nome:</label>
+                  <pre>{renderiza(editando.texto, editando.slug, null)}</pre>
+                </>
+              )}
+            </div>
             <div className="linha" style={{ marginTop: 10 }}>
               <button>Salvar texto</button>
               <a className="botao sec" href={`/admin/mensagens?canal=${canal}`}>Cancelar</a>
@@ -85,6 +97,9 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
                       {l.status !== 'ativa' && (
                         <form action={mudaStatus}><input type="hidden" name="slug" value={l.slug} /><input type="hidden" name="status" value="ativa" /><button className="sec">{l.status === 'pendente' ? 'Aprovar' : 'Ativar'}</button></form>
                       )}
+                      {!provisoria && l.status !== 'descartada' && (l.status !== 'ativa' || ativas.length > 1) ? (
+                        <form action={usaSo}><input type="hidden" name="slug" value={l.slug} /><button className="sec">Usar só esta</button></form>
+                      ) : null}
                       {l.status === 'ativa' && (
                         <form action={mudaStatus}><input type="hidden" name="slug" value={l.slug} /><input type="hidden" name="status" value="pausada" /><button className="sec">Pausar</button></form>
                       )}

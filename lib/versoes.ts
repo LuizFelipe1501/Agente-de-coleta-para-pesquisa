@@ -22,7 +22,13 @@ export async function versao(slug: string): Promise<Versao> {
 // Alocador que mantém as contagens em memória durante um lote de envios.
 export async function criaAlocador(canal: Canal) {
   const stats = await statsAtivas(canal);
-  const bracos: BraçoStats[] = stats.map((s) => ({ slug: s.slug, envios: s.envios, cliques: s.cliques }));
+  // versões ativas ainda com texto provisório ficam de fora (não travam o canal)
+  const prontas = new Set(
+    (checa(await db().from('versoes').select('slug,texto').eq('canal', canal).eq('status', 'ativa')) as { slug: string; texto: string }[])
+      .filter((v) => !v.texto.includes('[COLE AQUI'))
+      .map((v) => v.slug),
+  );
+  const bracos: BraçoStats[] = stats.filter((s) => prontas.has(s.slug)).map((s) => ({ slug: s.slug, envios: s.envios, cliques: s.cliques }));
   return {
     vazio: bracos.length === 0,
     proxima(): string {
@@ -44,8 +50,30 @@ export function linkDe(slug: string): string {
 export function renderiza(texto: string, slug: string, nome?: string | null, padraoNome = ''): string {
   const n = (nome || '').trim().split(/\s+/)[0] || padraoNome;
   let t = texto.replaceAll('{link}', linkDe(slug));
-  if (!n) t = t.replace(/,\s*\{nome\}/g, '');
+  if (!n) t = t.replace(/,\s*\{nome\}/g, '').replace(/\{nome\},?\s*/g, '');
   return t.replaceAll('{nome}', n);
+}
+
+// Primeiro nome a partir de e-mails no formato nome.sobrenome@orgao.gov.br.
+// Caixas genéricas (gabinete@, contato@...) e formatos sem ponto ficam sem nome.
+const GENERICOS = new Set(['gab', 'gabinete', 'contato', 'secretaria', 'sec', 'ouvidoria', 'sic', 'protocolo', 'atendimento',
+  'imprensa', 'comunicacao', 'ascom', 'dir', 'diretoria', 'coord', 'coordenacao', 'presidencia', 'adm', 'admin', 'rh',
+  'gestao', 'suporte', 'faleconosco', 'institucional', 'geral', 'nao', 'no', 'reply', 'noreply', 'servidor', 'equipe']);
+const ACENTOS: Record<string, string> = {
+  joao: 'João', jose: 'José', antonio: 'Antônio', marcia: 'Márcia', lucia: 'Lúcia', sergio: 'Sérgio', fabio: 'Fábio',
+  flavia: 'Flávia', claudia: 'Cláudia', patricia: 'Patrícia', leticia: 'Letícia', monica: 'Mônica', vinicius: 'Vinícius',
+  julio: 'Júlio', rogerio: 'Rogério', marcio: 'Márcio', angela: 'Ângela', andrea: 'Andréa', valeria: 'Valéria',
+  vitoria: 'Vitória', cecilia: 'Cecília', debora: 'Débora', barbara: 'Bárbara', tania: 'Tânia', vania: 'Vânia',
+  simone: 'Simone', otavio: 'Otávio', flavio: 'Flávio', cassio: 'Cássio', helio: 'Hélio', tulio: 'Túlio', caio: 'Caio',
+  luciana: 'Luciana', jessica: 'Jéssica', lais: 'Laís', luis: 'Luís', thais: 'Thaís', ines: 'Inês', rosangela: 'Rosângela',
+};
+export function nomeDoEmail(email: string): string | null {
+  const local = (email.split('@')[0] || '').toLowerCase();
+  const partes = local.split(/[._-]/).filter(Boolean);
+  if (partes.length < 2) return null;
+  const p = partes[0];
+  if (!/^[a-z]{3,}$/.test(p) || GENERICOS.has(p)) return null;
+  return ACENTOS[p] || p[0].toUpperCase() + p.slice(1);
 }
 
 export function hashContato(contato: string): string {

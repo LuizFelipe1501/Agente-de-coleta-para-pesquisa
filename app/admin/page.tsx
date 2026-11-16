@@ -16,14 +16,14 @@ export default async function VisaoGeral() {
 
   const [stats, versoes, respostas, fila, obj, lembretes] = await Promise.all([
     db().from('stats_versoes').select('*').order('slug'),
-    db().from('versoes').select('slug,texto,status'),
+    db().from('versoes').select('slug,canal,texto,status'),
     db().from('respostas').select('*').order('dia', { ascending: false }).limit(7),
     db().from('fila').select('canal,enviado_em,erro'),
     db().from('objecoes').select('categoria').gte('criado_em', new Date(Date.now() - 7 * 86400000).toISOString()),
     db().from('envios').select('qtd').eq('tipo', 'lembrete'),
   ]);
   const S = checa(stats) as Linha[];
-  const V = checa(versoes) as { slug: string; texto: string; status: string }[];
+  const V = checa(versoes) as { slug: string; canal: string; texto: string; status: string }[];
   const R = checa(respostas) as { dia: string; total: number }[];
   const F = checa(fila) as { canal: string; enviado_em: string | null; erro: string | null }[];
   const O = checa(obj) as { categoria: string }[];
@@ -39,8 +39,10 @@ export default async function VisaoGeral() {
 
   // O que ainda impede o bot de rodar
   const pendencias: { texto: string; href: string; botao: string }[] = [];
-  const semTexto = V.filter((v) => v.status === 'ativa' && v.texto.includes('[COLE AQUI'));
-  if (semTexto.length) pendencias.push({ texto: `${semTexto.length} versão(ões) A ainda com texto provisório. O disparo desses canais fica parado.`, href: '/admin/mensagens', botao: 'Preencher mensagens' });
+  const semPronta = (CANAIS as readonly Canal[]).filter(
+    (c) => !V.some((v) => v.canal === c && v.status === 'ativa' && !v.texto.includes('[COLE AQUI')),
+  );
+  if (semPronta.length) pendencias.push({ texto: `Sem mensagem pronta e ativa em: ${semPronta.map((c) => NOME_CANAL[c]).join(', ')}.`, href: '/admin/mensagens', botao: 'Escrever mensagens' });
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) pendencias.push({ texto: 'E-mail não configurado (SMTP_USER e SMTP_PASS na Vercel).', href: 'https://vercel.com/dashboard', botao: 'Abrir Vercel' });
   if (!process.env.GEMINI_API_KEY) pendencias.push({ texto: 'Chave do Gemini não configurada: respostas automáticas e sugestões desligadas.', href: 'https://aistudio.google.com', botao: 'Criar chave' });
   if (numeros.length === 0) pendencias.push({ texto: 'Nenhum número de WhatsApp cadastrado.', href: '/admin/contatos', botao: 'Cadastrar números' });

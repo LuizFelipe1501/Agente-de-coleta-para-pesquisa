@@ -6,7 +6,7 @@ import { db, checa } from '@/lib/db';
 import { config } from '@/lib/config';
 import { cronAutorizado } from '@/lib/auth';
 import {
-  criaAlocador, versao, renderiza, estaNoOptout, dentroDaJanela, enviadosHoje, linkDe,
+  criaAlocador, versao, renderiza, nomeDoEmail, estaNoOptout, dentroDaJanela, enviadosHoje, linkDe,
 } from '@/lib/versoes';
 import { enviaEmail, enviaWhatsApp, espera } from '@/lib/envio';
 import { LEMBRETE_EMAIL, LEMBRETE_WPP } from '@/lib/lembretes';
@@ -78,9 +78,11 @@ async function processa(canal: 'email' | 'wpp', log: string[], numero?: Numero) 
     if (!cache.has(slug)) cache.set(slug, await versao(slug));
     const v = cache.get(slug)!;
     if (v.texto.includes('[COLE AQUI')) { log.push(`${rotulo}: versão ${slug} ainda sem texto, pausando`); return; }
-    const texto = renderiza(v.texto, slug, l.nome, canal === 'email' ? 'servidor(a)' : '');
+    const nome = l.nome || (canal === 'email' ? nomeDoEmail(l.contato) : null);
+    const texto = renderiza(v.texto, slug, nome);
+    const assunto = v.assunto ? renderiza(v.assunto, slug, nome).trim() : undefined;
     try {
-      await enviar(l, texto, v.assunto || undefined);
+      await enviar(l, texto, assunto);
       await db().from('fila').update({ slug, enviado_em: new Date().toISOString() }).eq('id', l.id);
       await db().from('envios').insert({ slug, tipo: 'primeiro', numero: numero?.id ?? null });
       if (numero) await registraContatado(l.contato, numero.id);
