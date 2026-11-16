@@ -25,7 +25,7 @@ export async function criaAlocador(canal: Canal) {
   // versões ativas ainda com texto provisório ficam de fora (não travam o canal)
   const prontas = new Set(
     (checa(await db().from('versoes').select('slug,texto').eq('canal', canal).eq('status', 'ativa')) as { slug: string; texto: string }[])
-      .filter((v) => !v.texto.includes('[COLE AQUI'))
+      .filter((v) => prontaParaEnvio(v.texto))
       .map((v) => v.slug),
   );
   const bracos: BraçoStats[] = stats.filter((s) => prontas.has(s.slug)).map((s) => ({ slug: s.slug, envios: s.envios, cliques: s.cliques }));
@@ -41,6 +41,25 @@ export async function criaAlocador(canal: Canal) {
       return slug;
     },
   };
+}
+
+// Campos entre colchetes que sobraram de modelo ([Seu nome], [Instituição]...) ou o texto provisório.
+// Versão com isso não é enviada.
+export function camposAbertos(texto: string): string[] {
+  if (texto.includes('[COLE AQUI')) return ['texto provisório'];
+  const campos = [...new Set(texto.match(/\[[^\[\]\n]{2,60}\]/g) || [])];
+  const semCampos = texto.replace(/\[[^\[\]\n]{2,60}\]/g, '');
+  if (/[\[\]]/.test(semCampos)) campos.push('colchetes [ ] sobrando');
+  return campos;
+}
+export const prontaParaEnvio = (texto: string) => camposAbertos(texto).length === 0;
+
+// Ajusta jeitos comuns de escrever os campos: [Nome], {Nome}, [nome] -> {nome}; {{link}}, [link] -> {link}.
+export function normalizaCampos(texto: string): string {
+  return texto
+    .replace(/\{\{\s*link\s*\}\}/gi, '{link}')
+    .replace(/[\[{]\s*link\s*[\]}]/gi, '{link}')
+    .replace(/[\[{]\s*(primeiro\s+)?nome(\s+do\s+destinat[aá]rio)?\s*[\]}]/gi, '{nome}');
 }
 
 export function linkDe(slug: string): string {

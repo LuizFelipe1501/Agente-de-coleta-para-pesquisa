@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { exige } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { criaAlocador, versao, renderiza } from '@/lib/versoes';
+import { criaAlocador, versao, renderiza, prontaParaEnvio } from '@/lib/versoes';
 import Copiar from './Copiar';
 
 export const dynamic = 'force-dynamic';
@@ -38,7 +38,7 @@ export default async function Time({ searchParams }: { searchParams: Promise<{ c
 
       {!v ? (
         <section>Nenhuma versão ativa para este canal. Fale com quem coordena o projeto.</section>
-      ) : v.texto.includes('[COLE AQUI') ? (
+      ) : !prontaParaEnvio(v.texto) ? (
         <section>A versão {v.slug} ainda não tem texto. Peça para quem coordena preencher no painel.</section>
       ) : (
         <section>

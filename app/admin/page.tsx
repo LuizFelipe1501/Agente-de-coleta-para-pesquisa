@@ -1,7 +1,7 @@
 import { exige } from '@/lib/auth';
 import { db, checa } from '@/lib/db';
 import { config, CANAIS, NOME_CANAL, Canal } from '@/lib/config';
-import { agoraBrasilia, dentroDaJanela } from '@/lib/versoes';
+import { agoraBrasilia, dentroDaJanela, prontaParaEnvio } from '@/lib/versoes';
 import { listaNumeros } from '@/lib/numeros';
 import { salvaRespostas, disparaAgora } from './acoes';
 import BotaoEnviar from './BotaoEnviar';
@@ -43,7 +43,7 @@ export default async function VisaoGeral({ searchParams }: { searchParams: Promi
   // O que ainda impede o bot de rodar
   const pendencias: { texto: string; href: string; botao: string }[] = [];
   const semPronta = (CANAIS as readonly Canal[]).filter(
-    (c) => !V.some((v) => v.canal === c && v.status === 'ativa' && !v.texto.includes('[COLE AQUI')),
+    (c) => !V.some((v) => v.canal === c && v.status === 'ativa' && prontaParaEnvio(v.texto)),
   );
   if (semPronta.length) pendencias.push({ texto: `Sem mensagem pronta e ativa em: ${semPronta.map((c) => NOME_CANAL[c]).join(', ')}.`, href: '/admin/mensagens', botao: 'Escrever mensagens' });
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) pendencias.push({ texto: 'E-mail não configurado (SMTP_USER e SMTP_PASS na Vercel).', href: 'https://vercel.com/dashboard', botao: 'Abrir Vercel' });

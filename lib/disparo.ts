@@ -5,7 +5,7 @@
 import { db, checa } from './db';
 import { config } from './config';
 import {
-  criaAlocador, versao, renderiza, nomeDoEmail, estaNoOptout, dentroDaJanela, enviadosHoje, linkDe,
+  criaAlocador, versao, renderiza, nomeDoEmail, prontaParaEnvio, estaNoOptout, dentroDaJanela, enviadosHoje, linkDe,
 } from './versoes';
 import { enviaEmail, enviaWhatsApp, espera } from './envio';
 import { LEMBRETE_EMAIL, LEMBRETE_WPP } from './lembretes';
@@ -72,7 +72,7 @@ async function processa(canal: 'email' | 'wpp', log: string[], numero?: Numero) 
     const slug = aloc.proxima();
     if (!cache.has(slug)) cache.set(slug, await versao(slug));
     const v = cache.get(slug)!;
-    if (v.texto.includes('[COLE AQUI')) { log.push(`${rotulo}: versão ${slug} ainda sem texto, pausando`); return; }
+    if (!prontaParaEnvio(v.texto) || (v.assunto && !prontaParaEnvio(v.assunto))) { log.push(`${rotulo}: versão ${slug} com campo a preencher, parando`); return; }
     const nome = l.nome || (canal === 'email' ? nomeDoEmail(l.contato) : null);
     const texto = renderiza(v.texto, slug, nome);
     const assunto = v.assunto ? renderiza(v.assunto, slug, nome).trim() : undefined;

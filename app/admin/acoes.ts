@@ -5,7 +5,7 @@ import { exige } from '@/lib/auth';
 import { db, checa } from '@/lib/db';
 import { CANAIS, Canal } from '@/lib/config';
 import { sugereVersoes } from '@/lib/agente';
-import { estaNoOptout, normalizaContato, versao } from '@/lib/versoes';
+import { estaNoOptout, normalizaContato, versao, normalizaCampos } from '@/lib/versoes';
 
 const canalValido = (c: string): Canal => {
   if (!(CANAIS as readonly string[]).includes(c)) throw new Error('canal inválido');
@@ -44,8 +44,8 @@ export async function usaSo(fd: FormData) {
 export async function editaVersao(fd: FormData) {
   await exige('admin');
   const slug = String(fd.get('slug'));
-  let texto = String(fd.get('texto') || '').trim();
-  const assunto = fd.get('assunto') == null ? undefined : String(fd.get('assunto')).trim();
+  let texto = normalizaCampos(String(fd.get('texto') || '').trim());
+  const assunto = fd.get('assunto') == null ? undefined : normalizaCampos(String(fd.get('assunto')).trim());
   if (!texto) return;
   // link da pesquisa colado direto vira {link} (assim o clique é contado)
   texto = texto.replace(/https?:\/\/(pt\.|www\.)?surveymonkey\.com\/r\/[A-Za-z0-9]+/g, '{link}');

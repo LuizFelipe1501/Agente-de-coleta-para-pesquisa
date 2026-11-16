@@ -3,7 +3,7 @@ import { db, checa } from '@/lib/db';
 import { CANAIS, NOME_CANAL, Canal } from '@/lib/config';
 import { chanceDeSerMelhor } from '@/lib/bandit';
 import { mudaStatus, editaVersao, geraSugestoes, usaSo } from '../acoes';
-import { renderiza } from '@/lib/versoes';
+import { renderiza, camposAbertos } from '@/lib/versoes';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +52,11 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
             )}
             <label className="rot">Texto. Use {'{link}'} onde vai o link da pesquisa{canal === 'email' || canal === 'wpp' ? ' e {nome} para o primeiro nome' : ''}.</label>
             <textarea name="texto" defaultValue={editando.texto} style={{ minHeight: 220 }} />
+            {camposAbertos(`${editando.assunto || ''}\n${editando.texto}`).length > 0 && (
+              <div className="aviso">
+                Esta versão não é enviada enquanto tiver campos entre colchetes para preencher: <strong>{camposAbertos(`${editando.assunto || ''}\n${editando.texto}`).join(', ')}</strong>. Escreva o conteúdo no lugar deles. Para o nome da pessoa use {'{nome}'} e para o link use {'{link}'}.
+              </div>
+            )}
             <div className="previa-envio">
               <label className="rot">Como sai hoje (texto salvo), para um contato chamado Maria:</label>
               {canal === 'email' && editando.assunto && <p><strong>Assunto:</strong> {renderiza(editando.assunto, editando.slug, 'Maria')}</p>}
@@ -81,10 +86,11 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
           <tbody>
             {S.map((l) => {
               const v = textos.get(l.slug)!;
-              const provisoria = v.texto.includes('[COLE AQUI');
+              const abertos = camposAbertos(`${v.assunto || ''}\n${v.texto}`);
+              const provisoria = abertos.length > 0;
               return (
                 <tr key={l.slug}>
-                  <td><strong>{l.slug}</strong>{provisoria && <><br /><span className="tag pendente">sem texto</span></>}</td>
+                  <td><strong>{l.slug}</strong>{provisoria && <><br /><span className="tag pendente" title={abertos.join(', ')}>não envia: {abertos.slice(0, 2).join(', ')}</span></>}</td>
                   <td>{l.angulo}<div className="previa">{v.texto.slice(0, 110)}{v.texto.length > 110 ? '…' : ''}</div></td>
                   <td><span className={`tag ${l.status}`}>{l.status}</span></td>
                   <td className="n">{l.envios}</td>
