@@ -137,3 +137,14 @@ export async function alternaNumero(fd: FormData) {
   await db().from('numeros').update({ [campo]: valor }).eq('id', id);
   revalidatePath('/admin', 'layout');
 }
+
+// Botão "Disparar agora": roda uma rodada na hora, sem esperar o agendador.
+export async function disparaAgora() {
+  await exige('admin');
+  const { executaDisparo } = await import('@/lib/disparo');
+  const log = await executaDisparo(false);
+  const enviados = log.filter((l) => l.includes('enviado') || l.includes('lembrete enviado')).length;
+  const resumo = log.length === 0 ? 'Nada para enviar agora.' : `${enviados} envio(s). ${log.slice(0, 12).join(' · ')}`;
+  revalidatePath('/admin', 'layout');
+  redirect(`/admin?disparo=${encodeURIComponent(resumo.slice(0, 900))}`);
+}

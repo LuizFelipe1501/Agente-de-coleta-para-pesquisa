@@ -3,16 +3,19 @@ import { db, checa } from '@/lib/db';
 import { config, CANAIS, NOME_CANAL, Canal } from '@/lib/config';
 import { agoraBrasilia, dentroDaJanela } from '@/lib/versoes';
 import { listaNumeros } from '@/lib/numeros';
-import { salvaRespostas } from './acoes';
+import { salvaRespostas, disparaAgora } from './acoes';
+import BotaoEnviar from './BotaoEnviar';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // o botão "Disparar agora" roda aqui
 
 type Linha = { slug: string; canal: Canal; angulo: string; status: string; envios: number; cliques: number };
 
 const pct = (a: number, b: number) => (b ? `${((100 * a) / b).toFixed(1)}%` : '–');
 
-export default async function VisaoGeral() {
+export default async function VisaoGeral({ searchParams }: { searchParams: Promise<{ disparo?: string }> }) {
   await exige('admin');
+  const resultadoDisparo = (await searchParams).disparo;
 
   const [stats, versoes, respostas, fila, obj, lembretes] = await Promise.all([
     db().from('stats_versoes').select('*').order('slug'),
@@ -55,8 +58,19 @@ export default async function VisaoGeral() {
           <h1>Visão geral</h1>
           <p className="sub">Disparo automático {dentroDaJanela() ? 'liberado agora' : 'fora do horário agora'} ({config.horaInicio}h–{config.horaFim}h, dias úteis)</p>
         </div>
-        <a className="botao sec" href="/api/registro">Baixar registro (CSV)</a>
+        <div className="linha">
+          <form action={disparaAgora}>
+            <BotaoEnviar texto="Disparar agora" desligado={!dentroDaJanela()} dica={dentroDaJanela() ? 'Envia uma rodada agora: até 15 e-mails e 2 WhatsApps por número' : 'Só funciona no horário de envio'} />
+          </form>
+          <a className="botao sec" href="/api/registro">Baixar registro (CSV)</a>
+        </div>
       </div>
+
+      {resultadoDisparo && (
+        <div className="aviso">
+          <strong>Disparo:</strong> {resultadoDisparo}
+        </div>
+      )}
 
       {pendencias.length > 0 && (
         <section className="pendencias">
