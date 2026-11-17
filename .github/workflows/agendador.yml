@@ -3,9 +3,9 @@
 #   BOT_URL     = https://seu-bot.vercel.app
 #   CRON_SECRET = o mesmo valor da variável na Vercel
 name: agendador
+# O agendamento automático agora é feito pelo Supabase (pg_cron), porque o
+# GitHub atrasava as execuções em várias horas. Aqui fica só o botão manual.
 on:
-  schedule:
-    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
