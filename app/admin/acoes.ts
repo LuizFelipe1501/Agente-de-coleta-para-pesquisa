@@ -166,6 +166,7 @@ export async function enviaCorrecao(fd: FormData) {
     .filter((v) => prontaParaEnvio(v.texto, 'email'));
   if (ativas.length !== 1) volta('Deixe só uma versão de e-mail ativa (a certa, com "Usar só esta") antes de enviar a correção.');
   const v = ativas[0];
+  if (origem === v.slug) volta('Quem recebeu a versão ativa já recebeu o texto certo. A correção é só para as outras versões.');
   const alvos = checa(
     await db().from('fila').select('id,contato,nome').eq('canal', 'email').eq('slug', origem).not('enviado_em', 'is', null).limit(15),
   ) as { id: number; contato: string; nome: string | null }[];

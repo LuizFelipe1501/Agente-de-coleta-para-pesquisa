@@ -30,7 +30,9 @@ export default async function Mensagens({ searchParams }: { searchParams: Promis
   const naFila = new Map<string, number>();
   if (canal === 'email') {
     const F = checa(await db().from('fila').select('slug').eq('canal', 'email').not('enviado_em', 'is', null)) as { slug: string }[];
-    for (const f of F) naFila.set(f.slug, (naFila.get(f.slug) || 0) + 1);
+    // quem recebeu a versão que está ativa já recebeu o texto certo: não entra na correção
+    const ativasEmail = new Set(ativas.map((a) => a.slug));
+    for (const f of F) if (!ativasEmail.has(f.slug)) naFila.set(f.slug, (naFila.get(f.slug) || 0) + 1);
   }
 
   return (
